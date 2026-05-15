@@ -48,10 +48,12 @@
         authMode: 'login', 
         loading: false,
         async handleAuth() {
-            if (!this.email || !this.password) return alert('Please fill all fields');
+            const cleanEmail = this.email.trim();
+            const cleanPassword = this.password.trim();
+            if (!cleanEmail || !cleanPassword) return alert('Please fill all fields');
             this.loading = true;
             try {
-                await window.fb.login(this.email, this.password);
+                await window.fb.login(cleanEmail, cleanPassword);
                 this.page = 'home';
                 this.email = '';
                 this.password = '';

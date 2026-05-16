@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FloatBar Dev Hub</title>
+    <title>FloatBar Dev Hub - Manage Extensions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="icon" type="image/png" href="images/icon128.png">
     <style>
         [x-cloak] { display: none !important; }
         .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 
     <script type="module">
@@ -31,7 +33,6 @@
         const auth = getAuth(app);
         const analytics = getAnalytics(app);
 
-        // Expose Firebase functions to Alpine.js
         window.fb = {
             login: (email, password) => signInWithEmailAndPassword(auth, email, password),
             logout: () => signOut(auth),
@@ -39,14 +40,49 @@
         };
     </script>
 </head>
-<body class="bg-[#f5f5f7] dark:bg-[#1e1e1e] text-[#333] dark:text-[#e0e0e0] font-sans" 
+<body class="bg-[#f5f5f7] dark:bg-[#1e1e1e] text-[#333] dark:text-[#e0e0e0] font-sans min-h-screen" 
     x-data="{ 
         page: 'home', 
         user: null, 
         email: '', 
         password: '', 
-        authMode: 'login', 
         loading: false,
+        extensions: [],
+        newExt: { name: '', link: '', desc: '', icon: '' },
+        editingIndex: null,
+
+        init() {
+            // 1. Handle Extensions Persistence
+            const saved = localStorage.getItem('fb_extensions');
+            if (saved) {
+                this.extensions = JSON.parse(saved);
+            } else {
+                this.extensions = [
+                    { 
+                        name: 'FloatBar Apps Always On Top', 
+                        link: 'https://chorcha.net', 
+                        desc: 'The ultimate quick-access side bar and Always-on-Top PiP manager for your browser.', 
+                        icon: 'images/icon128.png' 
+                    }
+                ];
+            }
+
+            // 2. Handle Direct Linking (Routing)
+            // Allows links like: index.html?p=issue or index.html?p=leaving
+            const params = new URLSearchParams(window.location.search);
+            const route = params.get('p');
+            if (route && ['home', 'report', 'leaving', 'login'].includes(route)) {
+                this.page = route === 'report' ? 'report' : route;
+            }
+
+            // 3. Handle Firebase Auth State
+            window.fb.onStateChange(u => { this.user = u; });
+        },
+
+        saveToStorage() {
+            localStorage.setItem('fb_extensions', JSON.stringify(this.extensions));
+        },
+
         async handleAuth() {
             const cleanEmail = this.email.trim();
             const cleanPassword = this.password.trim();
@@ -63,155 +99,230 @@
                 this.loading = false;
             }
         },
+
         async logout() {
             await window.fb.logout();
             this.page = 'home';
-        }
-    }"
-    x-init="window.fb.onStateChange(u => { user = u; })">
+        },
 
-    <nav class="bg-white dark:bg-[#2c2c2e] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div @click="page = 'home'" class="flex items-center gap-2 cursor-pointer">
-                <div class="w-8 h-8 bg-orange-500 rounded-lg shadow-lg shadow-orange-500/30 flex items-center justify-center font-bold text-white">F</div>
+        addOrUpdateExtension() {
+            if (this.editingIndex !== null) {
+                this.extensions[this.editingIndex] = { ...this.newExt };
+                this.editingIndex = null;
+            } else {
+                this.extensions.push({ ...this.newExt });
+            }
+            this.saveToStorage();
+            this.newExt = { name: '', link: '', desc: '', icon: '' };
+            this.page = 'home';
+        },
+
+        editExt(index) {
+            this.editingIndex = index;
+            this.newExt = { ...this.extensions[index] };
+            this.page = 'add-ext';
+        },
+
+        deleteExt(index) {
+            if (confirm('Delete this extension?')) {
+                this.extensions.splice(index, 1);
+                this.saveToStorage();
+            }
+        }
+    }">
+
+    <nav class="bg-white dark:bg-[#2c2c2e] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div @click="page = 'home'" class="flex items-center gap-2 cursor-pointer group">
+                <div class="w-8 h-8 bg-orange-500 rounded-lg shadow-lg shadow-orange-500/30 flex items-center justify-center font-bold text-white group-hover:scale-110 transition">F</div>
                 <span class="font-bold text-xl tracking-tight">FloatBar <span class="text-orange-500">Dev</span></span>
             </div>
             <div class="flex gap-4 text-sm font-semibold">
-                <button @click="page = 'home'" :class="page === 'home' ? 'text-orange-500' : 'hover:text-orange-500'">Extensions</button>
-                <button @click="page = 'report'" :class="page === 'report' ? 'text-orange-500' : 'hover:text-orange-500'">Report Issue</button>
-                <button @click="page = 'login'" x-show="!user" class="bg-orange-500 text-white px-3 py-1 rounded-md">Login</button>
-                <button @click="logout()" x-show="user" class="text-red-500">Logout</button>
+                <button @click="page = 'home'" :class="page === 'home' ? 'text-orange-500' : 'hover:text-orange-500'">Home</button>
+                <button @click="page = 'report'" :class="page === 'report' ? 'text-orange-500' : 'hover:text-orange-500'">Issue</button>
+                <button @click="page = 'leaving'" :class="page === 'leaving' ? 'text-orange-500' : 'hover:text-orange-500'">Leaving?</button>
+                <button @click="page = 'login'" x-show="!user" class="bg-orange-500 text-white px-4 py-1.5 rounded-full hover:bg-orange-600 transition shadow-md">Login</button>
+                <button @click="logout()" x-show="user" class="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-full transition">Logout</button>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-4xl mx-auto px-4 py-10">
+    <main class="max-w-5xl mx-auto px-4 py-12">
         
+        <!-- HOME / SHOWCASE -->
         <template x-if="page === 'home'">
-            <div>
-                <div class="flex justify-between items-end mb-8">
+            <div class="animate-fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                     <div>
-                        <h1 class="text-4xl font-extrabold tracking-tight mb-2">Our <span class="text-orange-500">Extensions</span></h1>
-                        <p class="text-gray-500 dark:text-gray-400">Boost your browser productivity with our official tools.</p>
+                        <h1 class="text-5xl font-black tracking-tight mb-3">Our <span class="text-orange-500">Extensions</span></h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-lg">Boost your browser productivity with our official tools.</p>
                     </div>
-                    <button x-show="user" @click="page = 'add-ext'" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition">
+                    <button x-show="user" @click="page = 'add-ext'; editingIndex = null; newExt = { name: '', link: '', desc: '', icon: '' }" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-green-700 transition shadow-xl shadow-green-600/20">
                         + Add New
                     </button>
                 </div>
 
-                <div class="grid gap-6">
-                    <div class="bg-white dark:bg-[#2c2c2e] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex gap-6 items-start">
-                        <img src="images/icon128.png" class="w-20 h-20 rounded-2xl shadow-md" alt="Icon">
-                        <div class="flex-1">
-                            <h3 class="text-xl font-bold mb-1">FloatBar Apps Always On Top</h3>
-                            <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">The ultimate quick-access side bar and Always-on-Top PiP manager for your browser.</p>
-                            <div class="flex gap-3">
-                                <a href="#" class="text-sm font-bold text-orange-500 border border-orange-500 px-4 py-1.5 rounded-full hover:bg-orange-500 hover:text-white transition">View on Store</a>
-                                <button @click="page = 'uninstall'" class="text-sm text-gray-400 hover:text-red-500 transition">Remove</button>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <template x-for="(ext, index) in extensions" :key="index">
+                        <div class="bg-white dark:bg-[#2c2c2e] p-8 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-2xl transition duration-300 group relative">
+                            <div class="flex gap-6 items-start">
+                                <img :src="ext.icon || 'images/icon128.png'" class="w-24 h-24 rounded-[1.5rem] shadow-lg group-hover:scale-105 transition object-cover" alt="Icon">
+                                <div class="flex-1">
+                                    <h3 class="text-2xl font-black mb-2" x-text="ext.name"></h3>
+                                    <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed" x-text="ext.desc"></p>
+                                    <div class="flex gap-4 items-center">
+                                        <a :href="ext.link" target="_blank" class="text-sm font-bold bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600 transition shadow-lg shadow-orange-500/30">View on Store</a>
+                                        <template x-if="user">
+                                            <div class="flex gap-2 ml-auto">
+                                                <button @click="editExt(index)" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition">✏️</button>
+                                                <button @click="deleteExt(index)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition">🗑️</button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </template>
+                </div>
+
+                <!-- INFO SECTIONS -->
+                <div class="mt-24 space-y-16">
+                    <section class="bg-orange-50 dark:bg-orange-900/10 p-10 rounded-[3rem] border border-orange-100 dark:border-orange-900/30">
+                        <h2 class="text-3xl font-black mb-4">About FloatBar Apps</h2>
+                        <p class="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">FloatBar Apps is a powerful browser extension designed to boost your productivity. It injects a retractable, non-intrusive floating bar into the edge of your screen, giving you instant access to your favorite web applications—no matter what page you are browsing.</p>
+                    </section>
+
+                    <div class="grid md:grid-cols-2 gap-12">
+                        <section id="privacy">
+                            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2 text-orange-500">🛡️ Privacy First</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">I believe your data is yours. FloatBar Apps does <strong>NOT</strong> collect, transmit, distribute, or sell any of your personal data.</p>
+                            <ul class="text-sm text-gray-500 dark:text-gray-400 space-y-2 list-disc pl-5">
+                                <li>No browsing history tracking.</li>
+                                <li>100% Local Storage on your device.</li>
+                                <li>No accounts required for regular users.</li>
+                            </ul>
+                        </section>
+                        <section id="contact">
+                            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2 text-orange-500">📧 Contact</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Have questions or a feature request? Reach out directly!</p>
+                            <a href="mailto:lognodev7@gmail.com" class="inline-flex items-center gap-3 bg-gray-900 dark:bg-gray-700 text-white px-6 py-3 rounded-2xl hover:bg-orange-500 transition shadow-lg">
+                                <span>lognodev7@gmail.com</span>
+                                <span>→</span>
+                            </a>
+                        </section>
                     </div>
                 </div>
             </div>
         </template>
 
+        <!-- REPORT ISSUE -->
         <template x-if="page === 'report'">
-            <div class="bg-white dark:bg-[#2c2c2e] p-8 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
-                <h2 class="text-2xl font-bold mb-6">Submit an <span class="text-orange-500">Issue</span></h2>
-                <form class="space-y-4" @submit.prevent="alert('Issue Submitted! (Connect your DB here)')">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Select Extension</label>
-                        <select class="w-full p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700">
-                            <option>FloatBar Apps Always On Top</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Problem Description</label>
-                        <textarea rows="4" class="w-full p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700" placeholder="Explain what went wrong..."></textarea>
-                    </div>
-                    <button class="w-full bg-orange-500 text-white font-bold py-3 rounded-xl hover:bg-orange-600 transition shadow-lg shadow-orange-500/20">Send Feedback</button>
-                </form>
+            <div class="max-w-2xl mx-auto animate-fade-in">
+                <div class="bg-white dark:bg-[#2c2c2e] p-10 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800">
+                    <h2 class="text-3xl font-black mb-6">Submit an <span class="text-orange-500">Issue</span></h2>
+                    <form class="space-y-6" @submit.prevent="alert('Report Sent! (Connect to a database here)')">
+                        <div>
+                            <label class="block text-sm font-bold mb-2 ml-1">Extension</label>
+                            <select class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 focus:ring-2 ring-orange-500 outline-none transition">
+                                <template x-for="ext in extensions">
+                                    <option x-text="ext.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2 ml-1">What went wrong?</label>
+                            <textarea rows="5" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 focus:ring-2 ring-orange-500 outline-none transition" placeholder="Explain the bug in detail..."></textarea>
+                        </div>
+                        <button class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl hover:bg-orange-600 transition shadow-xl shadow-orange-500/30">Send Feedback</button>
+                    </form>
+                </div>
             </div>
         </template>
 
-        <template x-if="page === 'uninstall'">
-            <div class="text-center max-w-md mx-auto">
-                <div class="text-6xl mb-4">😢</div>
-                <h2 class="text-2xl font-bold mb-2">We're sorry to see you go!</h2>
-                <p class="text-gray-500 mb-8">Could you tell us why you're removing FloatBar? It helps us improve.</p>
+        <!-- LEAVING / UNINSTALL -->
+        <template x-if="page === 'leaving'">
+            <div class="max-w-xl mx-auto text-center animate-fade-in">
+                <div class="text-8xl mb-8">😢</div>
+                <h2 class="text-4xl font-black mb-4">We're sorry to see you go!</h2>
+                <p class="text-gray-500 mb-10 text-lg">It helps us improve if you tell us why you're removing FloatBar.</p>
                 
-                <form class="text-left space-y-3 bg-white dark:bg-[#2c2c2e] p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800" @submit.prevent="alert('Thank you for your feedback!')">
-                    <label class="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
-                        <input type="checkbox" class="accent-orange-500"> <span>Found a bug</span>
-                    </label>
-                    <label class="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
-                        <input type="checkbox" class="accent-orange-500"> <span>Too complicated to use</span>
-                    </label>
-                    <label class="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
-                        <input type="checkbox" class="accent-orange-500"> <span>Performance issues</span>
-                    </label>
-                    <label class="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
-                        <input type="checkbox" class="accent-orange-500"> <span>Missing a feature I need</span>
-                    </label>
-                    <textarea class="w-full p-3 mt-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700 text-sm" placeholder="Other comments..."></textarea>
-                    <button class="w-full bg-gray-900 dark:bg-orange-500 text-white font-bold py-3 rounded-xl mt-4">Submit & Goodbye</button>
+                <form class="text-left space-y-4 bg-white dark:bg-[#2c2c2e] p-10 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800" @submit.prevent="alert('Thank you. We will work harder!')">
+                    <template x-for="reason in ['Found a bug', 'Too complicated', 'Performance issues', 'Missing a feature', 'Found an alternative']">
+                        <label class="flex items-center gap-4 p-4 hover:bg-orange-50 dark:hover:bg-orange-900/10 rounded-2xl cursor-pointer transition">
+                            <input type="checkbox" class="w-5 h-5 accent-orange-500"> 
+                            <span class="font-bold" x-text="reason"></span>
+                        </label>
+                    </template>
+                    <textarea class="w-full p-4 mt-6 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 text-sm" placeholder="Any other comments?"></textarea>
+                    <button class="w-full bg-gray-900 dark:bg-orange-500 text-white font-black py-4 rounded-2xl mt-6 shadow-xl">Submit & Goodbye</button>
                 </form>
             </div>
         </template>
 
+        <!-- LOGIN -->
         <template x-if="page === 'login'">
-            <div class="max-w-sm mx-auto bg-white dark:bg-[#2c2c2e] p-8 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800 text-center">
-                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
-                <h2 class="text-xl font-bold mb-6">Admin Login</h2>
-                
-                <div class="space-y-4">
-                    <input type="email" x-model="email" class="w-full p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700" placeholder="Email Address">
-                    <input type="password" x-model="password" class="w-full p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700" placeholder="Password">
+            <div class="max-w-md mx-auto animate-fade-in">
+                <div class="bg-white dark:bg-[#2c2c2e] p-12 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800 text-center">
+                    <div class="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">🔐</div>
+                    <h2 class="text-3xl font-black mb-8">Admin Access</h2>
                     
-                    <button @click="handleAuth()" :disabled="loading" class="w-full bg-orange-500 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-                        <template x-if="loading">
-                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        </template>
-                        <span>Login</span>
-                    </button>
+                    <div class="space-y-4">
+                        <input type="email" x-model="email" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500 transition" placeholder="Email Address">
+                        <input type="password" x-model="password" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500 transition" placeholder="Password">
+                        
+                        <button @click="handleAuth()" :disabled="loading" class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl transition flex items-center justify-center gap-2 hover:bg-orange-600 shadow-xl shadow-orange-500/30 disabled:opacity-50 mt-4">
+                            <template x-if="loading">
+                                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            </template>
+                            <span>Sign In</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>
 
+        <!-- ADD/EDIT EXTENSION -->
         <template x-if="page === 'add-ext' && user">
-            <div class="bg-white dark:bg-[#2c2c2e] p-8 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800">
-                <div class="flex items-center gap-4 mb-6">
-                    <button @click="page = 'home'" class="text-gray-400 hover:text-black">← Back</button>
-                    <h2 class="text-2xl font-bold">Add <span class="text-green-500">New Extension</span></h2>
+            <div class="max-w-3xl mx-auto animate-fade-in">
+                <div class="bg-white dark:bg-[#2c2c2e] p-10 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800">
+                    <div class="flex items-center justify-between mb-10">
+                        <h2 class="text-3xl font-black" x-text="editingIndex !== null ? 'Edit Extension' : 'New Extension'"></h2>
+                        <button @click="page = 'home'" class="text-gray-400 hover:text-black dark:hover:text-white font-bold transition">Cancel</button>
+                    </div>
+                    <form class="space-y-6" @submit.prevent="addOrUpdateExtension()">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold mb-2 ml-1 text-gray-500">Name</label>
+                                <input type="text" x-model="newExt.name" required class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-2 ml-1 text-gray-500">Store URL</label>
+                                <input type="url" x-model="newExt.link" required class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2 ml-1 text-gray-500">Description</label>
+                            <textarea rows="3" x-model="newExt.desc" required class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2 ml-1 text-gray-500">Icon URL (Optional)</label>
+                            <input type="text" x-model="newExt.icon" placeholder="https://..." class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500">
+                        </div>
+                        <button class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl hover:bg-orange-600 transition shadow-xl shadow-orange-500/30" x-text="editingIndex !== null ? 'Update Extension' : 'Publish Extension'"></button>
+                    </form>
                 </div>
-                <form class="space-y-4" @submit.prevent="alert('Saved to DB!')">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-1 text-gray-500">Extension Name</label>
-                            <input type="text" class="w-full p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1 text-gray-500">Store Link (URL)</label>
-                            <input type="url" class="w-full p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-gray-500">Description</label>
-                        <textarea rows="3" class="w-full p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-gray-500">Icon URL</label>
-                        <input type="text" placeholder="https://..." class="w-full p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-xl border border-gray-200 dark:border-gray-700">
-                    </div>
-                    <button class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition">Publish Extension</button>
-                </form>
             </div>
         </template>
 
-    </div>
+    </main>
 
-    <footer class="text-center py-10 text-gray-400 text-sm">
-        &copy; 2026 FloatBar Apps. Designed for Developers.
+    <footer class="text-center py-16 text-gray-400 text-sm border-t border-gray-100 dark:border-gray-900 mt-12">
+        <p class="mb-2">&copy; 2026 FloatBar Apps. Designed for Developers.</p>
+        <div class="flex justify-center gap-6 mt-4">
+            <button @click="page = 'home'" class="hover:text-orange-500">Privacy</button>
+            <button @click="page = 'report'" class="hover:text-orange-500">Support</button>
+            <a href="mailto:lognodev7@gmail.com" class="hover:text-orange-500">Contact</a>
+        </div>
     </footer>
 
 </body>

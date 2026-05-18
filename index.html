@@ -170,7 +170,7 @@
     }">
 
     <nav class="bg-white dark:bg-[#2c2c2e] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div @click="page = 'home'" class="flex items-center gap-2 cursor-pointer group">
                 <div class="w-8 h-8 bg-orange-500 rounded-lg shadow-lg shadow-orange-500/30 flex items-center justify-center font-bold text-white group-hover:scale-110 transition">F</div>
                 <span class="font-bold text-xl tracking-tight">FloatBar <span class="text-orange-500">Dev</span></span>
@@ -179,7 +179,6 @@
                 <button @click="page = 'home'" :class="page === 'home' ? 'text-orange-500' : 'hover:text-orange-500'">Home</button>
                 <button @click="page = 'report'" :class="page === 'report' ? 'text-orange-500' : 'hover:text-orange-500'">Issue</button>
                 <button @click="page = 'leaving'" :class="page === 'leaving' ? 'text-orange-500' : 'hover:text-orange-500'">Leaving?</button>
-                <button @click="page = 'login'" x-show="!user" class="bg-orange-500 text-white px-4 py-1.5 rounded-full hover:bg-orange-600 transition shadow-md">Login</button>
                 <button @click="logout()" x-show="user" class="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-full transition">Logout</button>
             </div>
         </div>
@@ -203,12 +202,12 @@
                 <div class="flex flex-wrap justify-center gap-4">
                     <template x-for="(ext, index) in extensions" :key="index">
                         <div class="w-full md:w-[calc(50%-1rem)] bg-white dark:bg-[#2c2c2e] p-4 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-2xl transition duration-300 group relative">
-                            <div class="flex gap-6 items-start">
+                            <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
                                 <img :src="ext.icon || 'images/icon128.png'" class="w-24 h-24 rounded-[0.5rem] shadow-lg group-hover:scale-105 transition object-cover" alt="Icon">
-                                <div class="flex-1">
+                                <div class="flex-1 w-full">
                                     <h3 class="text-2xl font-black mb-2" x-text="ext.name"></h3>
                                     <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed" x-text="ext.desc"></p>
-                                    <div class="flex gap-4 items-center">
+                                    <div class="flex flex-wrap gap-4 items-center justify-center sm:justify-start w-full">
                                         <a :href="ext.link" target="_blank" class="text-sm font-bold bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600 transition shadow-lg shadow-orange-500/30">View on Store</a>
                                         <template x-if="user">
                                             <div class="flex gap-2 ml-auto">

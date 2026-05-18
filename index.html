@@ -6,7 +6,7 @@
     <title>FloatBar Dev Hub - Manage Extensions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="icon" type="image/png" href="images/icon128.png">
+    <link rel="icon" type="image/png" href="images/icon.png">
     <style>
         [x-cloak] { display: none !important; }
         .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
@@ -56,14 +56,20 @@
             // Load Extensions
             const savedExts = localStorage.getItem('fb_extensions');
             this.extensions = savedExts ? JSON.parse(savedExts) : [
-                { name: 'FloatBar Apps Always On Top', link: 'https://chorcha.net', desc: 'The ultimate quick-access side bar and Always-on-Top PiP manager for your browser.', icon: 'images/icon128.png' }
+                { name: 'FloatBar Apps Always On Top', link: 'https://chrome.google.com/webstore/detail/floatbar-apps-always-on-t/jphckchjajchokcdiilhhilbppafkppf?hl=en', desc: 'The ultimate quick-access side bar and Always-on-Top PiP manager for your browser.', icon: 'images/icon.png' },
+                { name: 'SideKeep Pro', link: '#', desc: 'Manage your tabs and bookmarks easily from a sidebar.', icon: 'images/icon.png' },
+                { name: 'Focus Mode Lite', link: '#', desc: 'Block distracting websites to stay focused on your work.', icon: 'images/icon.png' },
+                { name: 'Quick Note Taker', link: '#', desc: 'Take quick notes on any webpage without leaving the tab.', icon: 'images/icon.png' },
+                { name: 'Color Picker Utility', link: '#', desc: 'Extract any color from a webpage instantly.', icon: 'images/icon.png' },
+                { name: 'Reader View Plus', link: '#', desc: 'Clean up articles and read them in a distraction-free mode.', icon: 'images/icon.png' },
+                { name: 'Dark Mode Everywhere', link: '#', desc: 'Force dark mode on every website you visit.', icon: 'images/icon.png' }
             ];
 
             // 2. Handle Direct Linking (Routing)
             // Allows links like: index.html?p=issue or index.html?p=leaving
             const params = new URLSearchParams(window.location.search);
             const route = params.get('p');
-            if (route && ['home', 'report', 'leaving', 'login'].includes(route)) {
+            if (route && ['home', 'report', 'leaving', 'login', 'privacy', 'contact'].includes(route)) {
                 this.page = route === 'report' ? 'report' : route;
             }
 
@@ -120,6 +126,46 @@
                 this.extensions.splice(index, 1);
                 this.saveToStorage();
             }
+        },
+
+        async submitNetlifyIssue(e) {
+            this.loading = true;
+            const formData = new FormData(e.target);
+            formData.append('form-name', 'issue-report'); // Tell Netlify which form this is
+            
+            try {
+                await fetch('https://fancy-unicorn-ba5059.netlify.app/', {
+                    method: 'POST',
+                    body: formData
+                });
+                alert('Thank you! Issue submitted successfully.');
+                this.page = 'home';
+                e.target.reset();
+            } catch (err) {
+                alert('Error submitting form: ' + err.message);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async submitNetlifyLeaving(e) {
+            this.loading = true;
+            const formData = new FormData(e.target);
+            formData.append('form-name', 'leaving-feedback'); // Tell Netlify which form this is
+            
+            try {
+                await fetch('https://fancy-unicorn-ba5059.netlify.app/', {
+                    method: 'POST',
+                    body: formData
+                });
+                alert('Thank you for your feedback! I am sorry to see you go.');
+                this.page = 'home';
+                e.target.reset();
+            } catch (err) {
+                alert('Error submitting form: ' + err.message);
+            } finally {
+                this.loading = false;
+            }
         }
     }">
 
@@ -139,26 +185,26 @@
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 py-12">
+    <main class="max-w-5xl mx-auto px-4 py-4">
         
         <!-- HOME / SHOWCASE -->
         <template x-if="page === 'home'">
             <div class="animate-fade-in">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                     <div>
-                        <h1 class="text-5xl font-black tracking-tight mb-3">Our <span class="text-orange-500">Extensions</span></h1>
-                        <p class="text-gray-500 dark:text-gray-400 text-lg">Boost your browser productivity with our official tools.</p>
+                        <h1 class="text-5xl font-black tracking-tight mb-3">My <span class="text-orange-500">Extensions</span></h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-lg">Boost your browser productivity with my official tools.</p>
                     </div>
                     <button x-show="user" @click="page = 'add-ext'; editingIndex = null; newExt = { name: '', link: '', desc: '', icon: '' }" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-green-700 transition shadow-xl shadow-green-600/20">
                         + Add New
                     </button>
                 </div>
 
-                <div class="grid md:grid-cols-2 gap-8">
+                <div class="flex flex-wrap justify-center gap-4">
                     <template x-for="(ext, index) in extensions" :key="index">
-                        <div class="bg-white dark:bg-[#2c2c2e] p-8 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-2xl transition duration-300 group relative">
+                        <div class="w-full md:w-[calc(50%-1rem)] bg-white dark:bg-[#2c2c2e] p-4 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-2xl transition duration-300 group relative">
                             <div class="flex gap-6 items-start">
-                                <img :src="ext.icon || 'images/icon128.png'" class="w-24 h-24 rounded-[1.5rem] shadow-lg group-hover:scale-105 transition object-cover" alt="Icon">
+                                <img :src="ext.icon || 'images/icon128.png'" class="w-24 h-24 rounded-[0.5rem] shadow-lg group-hover:scale-105 transition object-cover" alt="Icon">
                                 <div class="flex-1">
                                     <h3 class="text-2xl font-black mb-2" x-text="ext.name"></h3>
                                     <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed" x-text="ext.desc"></p>
@@ -183,64 +229,58 @@
                         <h2 class="text-3xl font-black mb-4">About FloatBar Apps</h2>
                         <p class="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">FloatBar Apps is a powerful browser extension designed to boost your productivity. It injects a retractable, non-intrusive floating bar into the edge of your screen, giving you instant access to your favorite web applications—no matter what page you are browsing.</p>
                     </section>
-
-                    <div class="grid md:grid-cols-2 gap-12">
-                        <section id="privacy">
-                            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2 text-orange-500">🛡️ Privacy First</h2>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">I believe your data is yours. FloatBar Apps does <strong>NOT</strong> collect, transmit, distribute, or sell any of your personal data.</p>
-                            <ul class="text-sm text-gray-500 dark:text-gray-400 space-y-2 list-disc pl-5">
-                                <li>No browsing history tracking.</li>
-                                <li>100% Local Storage on your device.</li>
-                                <li>No accounts required for regular users.</li>
-                            </ul>
-                        </section>
-                        <section id="contact">
-                            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2 text-orange-500">📧 Contact</h2>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Have questions or a feature request? Reach out directly!</p>
-                            <a href="mailto:lognodev7@gmail.com" class="inline-flex items-center gap-3 bg-gray-900 dark:bg-gray-700 text-white px-6 py-3 rounded-2xl hover:bg-orange-500 transition shadow-lg">
-                                <span>lognodev7@gmail.com</span>
-                                <span>→</span>
-                            </a>
-                        </section>
-                    </div>
                 </div>
             </div>
         </template>
 
         <!-- REPORT ISSUE -->
         <template x-if="page === 'report'">
-            <div class="max-w-2xl mx-auto animate-fade-in">
-                <div class="bg-white dark:bg-[#2c2c2e] p-10 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800">
+            <div class=" animate-fade-in">
+                <div >
                     <h2 class="text-3xl font-black mb-6">Submit an <span class="text-orange-500">Issue</span></h2>
-                    <!-- REPLACE THE SRC WITH YOUR NETLIFY FORM URL -->
-                    <iframe 
-                        src="https://fancy-unicorn-ba5059.netlify.app/issue-form.html" 
-                        width="100%" 
-                        height="380px" 
-                        style="border:none; overflow:hidden;" 
-                        scrolling="no">
-                    </iframe>
+                    <form class="space-y-6" @submit.prevent="submitNetlifyIssue($event)">
+                        <div>
+                            <label class="block text-sm font-bold mb-2 ml-1">Extension</label>
+                            <select name="extension" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 focus:ring-2 ring-orange-500 outline-none transition">
+                                <template x-for="ext in extensions">
+                                    <option :value="ext.name" x-text="ext.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2 ml-1">What went wrong?</label>
+                            <textarea name="desc" required rows="5" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 focus:ring-2 ring-orange-500 outline-none transition" placeholder="Explain the bug in detail..."></textarea>
+                        </div>
+                        <button type="submit" :disabled="loading" class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl hover:bg-orange-600 transition shadow-xl shadow-orange-500/30 flex justify-center items-center gap-2">
+                            <span x-show="loading" class="animate-spin text-xl">⏳</span>
+                            <span x-text="loading ? 'Sending...' : 'Send Feedback'"></span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </template>
 
         <!-- LEAVING / UNINSTALL -->
         <template x-if="page === 'leaving'">
-            <div class="max-w-xl mx-auto text-center animate-fade-in">
+            <div class=" text-center animate-fade-in">
                 <div class="text-8xl mb-8">😢</div>
-                <h2 class="text-4xl font-black mb-4">We're sorry to see you go!</h2>
-                <p class="text-gray-500 mb-10 text-lg">It helps us improve if you tell us why you're removing FloatBar.</p>
+                <h2 class="text-4xl font-black mb-4">I'm sorry to see you go!</h2>
+                <p class="text-gray-500 mb-10 text-lg">It helps me improve if you tell me why you're removing FloatBar.</p>
                 
-                <div class="bg-white dark:bg-[#2c2c2e] p-10 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800">
-                    <!-- REPLACE THE SRC WITH YOUR NETLIFY FORM URL -->
-                    <iframe 
-                        src="https://fancy-unicorn-ba5059.netlify.app/leaving-form.html" 
-                        width="100%" 
-                        height="550px" 
-                        style="border:none; overflow:hidden;" 
-                        scrolling="no">
-                    </iframe>
-                </div>
+                <form @submit.prevent="submitNetlifyLeaving($event)">
+                    <template x-for="reason in ['Found a bug', 'Too complicated', 'Performance issues', 'Missing a feature', 'Found an alternative']">
+                        <label class="flex items-center gap-4 p-4 hover:bg-orange-50 dark:hover:bg-orange-900/10 rounded-2xl cursor-pointer transition">
+                            <input type="checkbox" name="reason" :value="reason" class="w-5 h-5 accent-orange-500"> 
+                            <span class="font-bold" x-text="reason"></span>
+                        </label>
+                    </template>
+                    <textarea name="comment" class="w-full p-4 mt-6 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 text-sm focus:ring-2 ring-orange-500 outline-none" placeholder="Any other comments?"></textarea>
+                    
+                    <button type="submit" :disabled="loading" class="w-full bg-gray-900 dark:bg-orange-500 text-white font-black py-4 rounded-2xl mt-6 shadow-xl flex justify-center items-center gap-2">
+                        <span x-show="loading" class="animate-spin text-xl">⏳</span>
+                        <span x-text="loading ? 'Submitting...' : 'Submit & Goodbye'"></span>
+                    </button>
+                </form>
             </div>
         </template>
 
@@ -299,16 +339,44 @@
             </div>
         </template>
 
+        <!-- PRIVACY -->
+        <template x-if="page === 'privacy'">
+            <div class="max-w-2xl mx-auto animate-fade-in">
+                <div class="bg-white dark:bg-[#2c2c2e] p-10 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800">
+                    <h2 class="text-3xl font-bold mb-6 flex items-center gap-2 text-orange-500">🛡️ Privacy First</h2>
+                    <p class="text-lg text-gray-500 dark:text-gray-400 leading-relaxed mb-6">I believe your data is yours. FloatBar Apps does <strong>NOT</strong> collect, transmit, distribute, or sell any of your personal data.</p>
+                    <ul class="text-lg text-gray-500 dark:text-gray-400 space-y-4 list-disc pl-5">
+                        <li>No browsing history tracking.</li>
+                        <li>100% Local Storage on your device.</li>
+                        <li>No accounts required for regular users.</li>
+                    </ul>
+                </div>
+            </div>
+        </template>
+
+        <!-- CONTACT -->
+        <template x-if="page === 'contact'">
+            <div class="max-w-2xl mx-auto animate-fade-in text-center">
+                <div class="bg-white dark:bg-[#2c2c2e] p-10 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center">
+                    <h2 class="text-3xl font-bold mb-6 flex items-center gap-2 text-orange-500">📧 Contact Me</h2>
+                    <p class="text-lg text-gray-500 dark:text-gray-400 mb-8 max-w-sm">Have questions or a feature request? Reach out directly!</p>
+                    <a href="mailto:lognodev7@gmail.com" class="inline-flex items-center gap-3 bg-gray-900 dark:bg-gray-700 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-orange-500 transition shadow-xl hover:-translate-y-1">
+                        <span>lognodev7@gmail.com</span>
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
+        </template>
+
     </main>
 
-    <footer class="text-center py-16 text-gray-400 text-sm border-t border-gray-100 dark:border-gray-900 mt-12">
+    <footer class="text-center py-6 text-gray-400 text-sm border-t border-gray-100 dark:border-gray-900 mt-4">
         <p class="mb-2">&copy; 2026 FloatBar Apps. Designed for Developers.</p>
         <div class="flex justify-center gap-6 mt-4">
-            <button @click="page = 'home'" class="hover:text-orange-500">Privacy</button>
+            <button @click="page = 'privacy'" class="hover:text-orange-500">Privacy</button>
             <button @click="page = 'report'" class="hover:text-orange-500">Support</button>
-            <a href="mailto:lognodev7@gmail.com" class="hover:text-orange-500">Contact</a>
+            <button @click="page = 'contact'" class="hover:text-orange-500">Contact</button>
         </div>
     </footer>
-
 </body>
 </html>

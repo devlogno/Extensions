@@ -14,43 +14,12 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDt1Vxt2PwpbYImZfLbZrkCuduz4nStbfM",
-            authDomain: "extension-page.firebaseapp.com",
-            projectId: "extension-page",
-            storageBucket: "extension-page.firebasestorage.app",
-            messagingSenderId: "837525897212",
-            appId: "1:837525897212:web:5488fae8bb42c96ee5bc79",
-            measurementId: "G-DN46TYYV3T"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const analytics = getAnalytics(app);
-
-        window.fb = {
-            login: (email, password) => signInWithEmailAndPassword(auth, email, password),
-            logout: () => signOut(auth),
-            onStateChange: (cb) => onAuthStateChanged(auth, cb)
-        };
-    </script>
 </head>
 <body class="bg-[#f5f5f7] dark:bg-[#1e1e1e] text-[#333] dark:text-[#e0e0e0] font-sans min-h-screen" 
     x-data="{ 
         page: 'home', 
-        user: null, 
-        email: '', 
-        password: '', 
         loading: false,
         extensions: [],
-        newExt: { name: '', link: '', desc: '', icon: '' },
-        editingIndex: null,
 
         init() {
             // Load Extensions
@@ -69,62 +38,8 @@
             // Allows links like: index.html?p=issue or index.html?p=leaving
             const params = new URLSearchParams(window.location.search);
             const route = params.get('p');
-            if (route && ['home', 'report', 'leaving', 'login', 'privacy', 'contact'].includes(route)) {
+            if (route && ['home', 'report', 'leaving', 'privacy', 'contact'].includes(route)) {
                 this.page = route === 'report' ? 'report' : route;
-            }
-
-            // 3. Handle Firebase Auth State
-            window.fb.onStateChange(u => { this.user = u; });
-        },
-
-        saveToStorage() {
-            localStorage.setItem('fb_extensions', JSON.stringify(this.extensions));
-        },
-
-        async handleAuth() {
-            const cleanEmail = this.email.trim();
-            const cleanPassword = this.password.trim();
-            if (!cleanEmail || !cleanPassword) return alert('Please fill all fields');
-            this.loading = true;
-            try {
-                await window.fb.login(cleanEmail, cleanPassword);
-                this.page = 'home';
-                this.email = '';
-                this.password = '';
-            } catch (err) {
-                alert(err.message);
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async logout() {
-            await window.fb.logout();
-            this.page = 'home';
-        },
-
-        addOrUpdateExtension() {
-            if (this.editingIndex !== null) {
-                this.extensions[this.editingIndex] = { ...this.newExt };
-                this.editingIndex = null;
-            } else {
-                this.extensions.push({ ...this.newExt });
-            }
-            this.saveToStorage();
-            this.newExt = { name: '', link: '', desc: '', icon: '' };
-            this.page = 'home';
-        },
-
-        editExt(index) {
-            this.editingIndex = index;
-            this.newExt = { ...this.extensions[index] };
-            this.page = 'add-ext';
-        },
-
-        deleteExt(index) {
-            if (confirm('Delete this extension?')) {
-                this.extensions.splice(index, 1);
-                this.saveToStorage();
             }
         },
 
@@ -136,6 +51,7 @@
             try {
                 await fetch('https://fancy-unicorn-ba5059.netlify.app/', {
                     method: 'POST',
+                    mode: 'no-cors',
                     body: formData
                 });
                 alert('Thank you! Issue submitted successfully.');
@@ -156,6 +72,7 @@
             try {
                 await fetch('https://fancy-unicorn-ba5059.netlify.app/', {
                     method: 'POST',
+                    mode: 'no-cors',
                     body: formData
                 });
                 alert('Thank you for your feedback! I am sorry to see you go.');
@@ -179,7 +96,6 @@
                 <button @click="page = 'home'" :class="page === 'home' ? 'text-orange-500' : 'hover:text-orange-500'">Home</button>
                 <button @click="page = 'report'" :class="page === 'report' ? 'text-orange-500' : 'hover:text-orange-500'">Issue</button>
                 <button @click="page = 'leaving'" :class="page === 'leaving' ? 'text-orange-500' : 'hover:text-orange-500'">Leaving?</button>
-                <button @click="logout()" x-show="user" class="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-full transition">Logout</button>
             </div>
         </div>
     </nav>
@@ -194,9 +110,6 @@
                         <h1 class="text-5xl font-black tracking-tight mb-3">My <span class="text-orange-500">Extensions</span></h1>
                         <p class="text-gray-500 dark:text-gray-400 text-lg">Boost your browser productivity with my official tools.</p>
                     </div>
-                    <button x-show="user" @click="page = 'add-ext'; editingIndex = null; newExt = { name: '', link: '', desc: '', icon: '' }" class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-green-700 transition shadow-xl shadow-green-600/20">
-                        + Add New
-                    </button>
                 </div>
 
                 <div class="flex flex-wrap justify-center gap-4">
@@ -209,12 +122,6 @@
                                     <p class="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed" x-text="ext.desc"></p>
                                     <div class="flex flex-wrap gap-4 items-center justify-center sm:justify-start w-full">
                                         <a :href="ext.link" target="_blank" class="text-sm font-bold bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600 transition shadow-lg shadow-orange-500/30">View on Store</a>
-                                        <template x-if="user">
-                                            <div class="flex gap-2 ml-auto">
-                                                <button @click="editExt(index)" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition">✏️</button>
-                                                <button @click="deleteExt(index)" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition">🗑️</button>
-                                            </div>
-                                        </template>
                                     </div>
                                 </div>
                             </div>
@@ -240,15 +147,21 @@
                     <form class="space-y-6" @submit.prevent="submitNetlifyIssue($event)">
                         <div>
                             <label class="block text-sm font-bold mb-2 ml-1">Extension</label>
-                            <select name="extension" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 focus:ring-2 ring-orange-500 outline-none transition">
-                                <template x-for="ext in extensions">
-                                    <option :value="ext.name" x-text="ext.name"></option>
-                                </template>
-                            </select>
+                            <div class="relative">
+                                <select name="extension" required class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 focus:ring-2 ring-orange-500 outline-none transition cursor-pointer appearance-none">
+                                    <option value="" disabled selected>✨ Select an extension...</option>
+                                    <template x-for="ext in extensions">
+                                        <option :value="ext.name" x-text="ext.name"></option>
+                                    </template>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-sm font-bold mb-2 ml-1">What went wrong?</label>
-                            <textarea name="desc" required rows="5" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 focus:ring-2 ring-orange-500 outline-none transition" placeholder="Explain the bug in detail..."></textarea>
+                            <textarea name="desc" required rows="1" x-data="{ resize() { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' } }" @input="resize()" x-init="$nextTick(() => resize())" class="w-full px-4 pt-6 pb-2 bg-gray-100 dark:bg-gray-800/50 rounded-t-lg border-0 border-b-2 border-gray-400 dark:border-gray-600 focus:ring-0 focus:border-orange-500 focus:bg-gray-50 dark:focus:bg-[#2c2c2e] outline-none transition-colors overflow-hidden" placeholder="Explain the bug in detail..."></textarea>
                         </div>
                         <button type="submit" :disabled="loading" class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl hover:bg-orange-600 transition shadow-xl shadow-orange-500/30 flex justify-center items-center gap-2">
                             <span x-show="loading" class="animate-spin text-xl">⏳</span>
@@ -262,79 +175,24 @@
         <!-- LEAVING / UNINSTALL -->
         <template x-if="page === 'leaving'">
             <div class=" text-center animate-fade-in">
-                <div class="text-8xl mb-8">😢</div>
-                <h2 class="text-4xl font-black mb-4">I'm sorry to see you go!</h2>
+                <div class="text-6xl mb-8">😢</div>
+                <h2 class="text-3xl font-black mb-4">I'm sorry to see you go!</h2>
                 <p class="text-gray-500 mb-10 text-lg">It helps me improve if you tell me why you're removing FloatBar.</p>
                 
                 <form @submit.prevent="submitNetlifyLeaving($event)">
-                    <template x-for="reason in ['Found a bug', 'Too complicated', 'Performance issues', 'Missing a feature', 'Found an alternative']">
+                    <template x-for="reason in ['Found a bug', 'Too complicated', 'Performance issues', 'Found an alternative']">
                         <label class="flex items-center gap-4 p-4 hover:bg-orange-50 dark:hover:bg-orange-900/10 rounded-2xl cursor-pointer transition">
                             <input type="checkbox" name="reason" :value="reason" class="w-5 h-5 accent-orange-500"> 
                             <span class="font-bold" x-text="reason"></span>
                         </label>
                     </template>
-                    <textarea name="comment" class="w-full p-4 mt-6 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 text-sm focus:ring-2 ring-orange-500 outline-none" placeholder="Any other comments?"></textarea>
+                    <textarea name="comment" rows="1" x-data="{ resize() { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' } }" @input="resize()" x-init="$nextTick(() => resize())" class="w-full px-4 pt-6 pb-2 mt-6 bg-gray-100 dark:bg-gray-800/50 rounded-t-lg border-0 border-b-2 border-gray-400 dark:border-gray-600 text-sm focus:ring-0 focus:border-orange-500 focus:bg-gray-50 dark:focus:bg-[#2c2c2e] outline-none transition-colors overflow-hidden" placeholder="Any other comments?"></textarea>
                     
                     <button type="submit" :disabled="loading" class="w-full bg-gray-900 dark:bg-orange-500 text-white font-black py-4 rounded-2xl mt-6 shadow-xl flex justify-center items-center gap-2">
                         <span x-show="loading" class="animate-spin text-xl">⏳</span>
                         <span x-text="loading ? 'Submitting...' : 'Submit & Goodbye'"></span>
                     </button>
                 </form>
-            </div>
-        </template>
-
-        <!-- LOGIN -->
-        <template x-if="page === 'login'">
-            <div class="max-w-md mx-auto animate-fade-in">
-                <div class="bg-white dark:bg-[#2c2c2e] p-12 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800 text-center">
-                    <div class="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">🔐</div>
-                    <h2 class="text-3xl font-black mb-8">Admin Access</h2>
-                    
-                    <div class="space-y-4">
-                        <input type="email" x-model="email" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500 transition" placeholder="Email Address">
-                        <input type="password" x-model="password" class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500 transition" placeholder="Password">
-                        
-                        <button @click="handleAuth()" :disabled="loading" class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl transition flex items-center justify-center gap-2 hover:bg-orange-600 shadow-xl shadow-orange-500/30 disabled:opacity-50 mt-4">
-                            <template x-if="loading">
-                                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            </template>
-                            <span>Sign In</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </template>
-
-        <!-- ADD/EDIT EXTENSION -->
-        <template x-if="page === 'add-ext' && user">
-            <div class="max-w-3xl mx-auto animate-fade-in">
-                <div class="bg-white dark:bg-[#2c2c2e] p-10 rounded-[3rem] shadow-2xl border border-gray-200 dark:border-gray-800">
-                    <div class="flex items-center justify-between mb-10">
-                        <h2 class="text-3xl font-black" x-text="editingIndex !== null ? 'Edit Extension' : 'New Extension'"></h2>
-                        <button @click="page = 'home'" class="text-gray-400 hover:text-black dark:hover:text-white font-bold transition">Cancel</button>
-                    </div>
-                    <form class="space-y-6" @submit.prevent="addOrUpdateExtension()">
-                        <div class="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-bold mb-2 ml-1 text-gray-500">Name</label>
-                                <input type="text" x-model="newExt.name" required class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold mb-2 ml-1 text-gray-500">Store URL</label>
-                                <input type="url" x-model="newExt.link" required class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2 ml-1 text-gray-500">Description</label>
-                            <textarea rows="3" x-model="newExt.desc" required class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500"></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold mb-2 ml-1 text-gray-500">Icon URL (Optional)</label>
-                            <input type="text" x-model="newExt.icon" placeholder="https://..." class="w-full p-4 bg-gray-50 dark:bg-[#1e1e1e] rounded-2xl border border-gray-200 dark:border-gray-700 outline-none focus:ring-2 ring-orange-500">
-                        </div>
-                        <button class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl hover:bg-orange-600 transition shadow-xl shadow-orange-500/30" x-text="editingIndex !== null ? 'Update Extension' : 'Publish Extension'"></button>
-                    </form>
-                </div>
             </div>
         </template>
 

@@ -65,6 +65,9 @@
             this.loading = true;
             const formData = new FormData(e.target);
             formData.append('form-name', 'issue-report'); // Tell Netlify which form this is
+            if (this.selectedExt) {
+                formData.set('extension', this.selectedExt);
+            }
             
             try {
                 await fetch('https://fancy-unicorn-ba5059.netlify.app/', {
@@ -94,6 +97,9 @@
             
             this.loading = true;
             formData.append('form-name', 'leaving-feedback'); // Tell Netlify which form this is
+            if (this.selectedExt) {
+                formData.set('extension', this.selectedExt);
+            }
             
             try {
                 await fetch('https://fancy-unicorn-ba5059.netlify.app/', {

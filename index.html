@@ -66,7 +66,8 @@
             const formData = new FormData(e.target);
             formData.append('form-name', 'issue-report'); // Tell Netlify which form this is
             if (this.selectedExt) {
-                formData.set('extension', this.selectedExt);
+                const desc = formData.get('desc') || '';
+                formData.set('desc', `Extension: ${this.selectedExt}\n\n${desc}`);
             }
             
             try {
@@ -98,7 +99,8 @@
             this.loading = true;
             formData.append('form-name', 'leaving-feedback'); // Tell Netlify which form this is
             if (this.selectedExt) {
-                formData.set('extension', this.selectedExt);
+                const updatedComment = `Extension: ${this.selectedExt}\n\n${comment || ''}`;
+                formData.set('comment', updatedComment);
             }
             
             try {
